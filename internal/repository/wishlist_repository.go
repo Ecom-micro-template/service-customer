@@ -56,7 +56,7 @@ func (r *WishlistRepository) Remove(ctx context.Context, userID, productID uuid.
 	result := r.db.WithContext(ctx).
 		Where("user_id = ? AND product_id = ?", userID, productID).
 		Delete(&models.WishlistItem{})
-	
+
 	if result.Error != nil {
 		return result.Error
 	}

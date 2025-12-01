@@ -11,7 +11,7 @@ import (
 type Address struct {
 	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	UserID        uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
-	Label         string    `gorm:"type:varchar(50)" json:"label"`               // Home, Office, Other
+	Label         string    `gorm:"type:varchar(50)" json:"label"` // Home, Office, Other
 	RecipientName string    `gorm:"type:varchar(200);not null" json:"recipient_name"`
 	Phone         string    `gorm:"type:varchar(50);not null" json:"phone"`
 	AddressLine1  string    `gorm:"type:varchar(500);not null" json:"address_line1"`

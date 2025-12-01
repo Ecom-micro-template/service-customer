@@ -75,7 +75,7 @@ func (r *AddressRepository) Delete(ctx context.Context, id, userID uuid.UUID) er
 	result := r.db.WithContext(ctx).
 		Where("id = ? AND user_id = ?", id, userID).
 		Delete(&models.Address{})
-	
+
 	if result.Error != nil {
 		return result.Error
 	}

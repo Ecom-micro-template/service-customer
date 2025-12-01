@@ -89,7 +89,7 @@ func GetUserID(c *gin.Context) (uuid.UUID, bool) {
 	if !exists {
 		return uuid.Nil, false
 	}
-	
+
 	uid, ok := userID.(uuid.UUID)
 	return uid, ok
 }
