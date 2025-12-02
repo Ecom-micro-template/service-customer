@@ -60,6 +60,7 @@ func main() {
 		&models.Profile{},
 		&models.Address{},
 		&models.WishlistItem{},
+		&models.CustomerMeasurement{}, // Day 96
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -78,6 +79,7 @@ func main() {
 	addressHandler := handlers.NewAddressHandler(db)
 	wishlistHandler := handlers.NewWishlistHandler(db)
 	orderHistoryHandler := handlers.NewOrderHistoryHandler()
+	measurementHandler := handlers.NewMeasurementHandler(db) // Day 96
 
 	// Setup router
 	router := gin.Default()
@@ -116,6 +118,14 @@ func main() {
 
 			// Order History
 			customer.GET("/orders", orderHistoryHandler.GetOrderHistory)
+
+			// Measurements (Day 96)
+			customer.GET("/measurements", measurementHandler.List)
+			customer.POST("/measurements", measurementHandler.Create)
+			customer.GET("/measurements/:id", measurementHandler.GetByID)
+			customer.PUT("/measurements/:id", measurementHandler.Update)
+			customer.DELETE("/measurements/:id", measurementHandler.Delete)
+			customer.PUT("/measurements/:id/set-default", measurementHandler.SetDefault)
 		}
 	}
 
