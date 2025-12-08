@@ -58,11 +58,11 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose port
-EXPOSE 8005
+EXPOSE 8004
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:8005/health || exit 1
+    CMD wget -qO- http://localhost:8004/health || exit 1
 
 # Run the application
 CMD ["./server"]
