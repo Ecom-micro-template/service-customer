@@ -24,29 +24,12 @@ func NewAdminCustomerHandler(customerRepo repository.CustomerRepository, logger 
 	}
 }
 
-// CustomerListFilter represents filters for admin customer listing
-type CustomerListFilter struct {
-	Status    string     `form:"status"`
-	Segment   string     `form:"segment"`
-	DateFrom  *time.Time `form:"date_from"`
-	DateTo    *time.Time `form:"date_to"`
-	OrdersMin *int       `form:"orders_min"`
-	OrdersMax *int       `form:"orders_max"`
-	SpentMin  *float64   `form:"spent_min"`
-	SpentMax  *float64   `form:"spent_max"`
-	Search    string     `form:"search"`
-	Page      int        `form:"page"`
-	Limit     int        `form:"limit"`
-	SortBy    string     `form:"sort_by"`
-	SortOrder string     `form:"sort_order"`
-}
-
 // GetCustomers handles GET /admin/customers
 func (h *AdminCustomerHandler) GetCustomers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	filter := CustomerListFilter{
+	filter := models.CustomerListFilter{
 		Status:    c.Query("status"),
 		Segment:   c.Query("segment"),
 		Search:    c.Query("search"),
@@ -397,7 +380,7 @@ func (h *AdminCustomerHandler) AssignSegment(c *gin.Context) {
 func (h *AdminCustomerHandler) ExportCustomers(c *gin.Context) {
 	format := c.DefaultQuery("format", "csv")
 
-	filter := CustomerListFilter{
+	filter := models.CustomerListFilter{
 		Status:  c.Query("status"),
 		Segment: c.Query("segment"),
 		Search:  c.Query("search"),
