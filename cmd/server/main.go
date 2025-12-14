@@ -16,6 +16,8 @@ import (
 	"github.com/niaga-platform/service-customer/internal/handlers"
 	"github.com/niaga-platform/service-customer/internal/middleware"
 	"github.com/niaga-platform/service-customer/internal/models"
+	"github.com/niaga-platform/service-customer/internal/repository"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -75,12 +77,30 @@ func main() {
 		log.Printf("⚠️  Warning: Failed to create unique index on wishlist: %v", err)
 	}
 
+	// Initialize zap logger
+	var zapLogger *zap.Logger
+	var zapErr error
+	if os.Getenv("APP_ENV") == "production" {
+		zapLogger, zapErr = zap.NewProduction()
+	} else {
+		zapLogger, zapErr = zap.NewDevelopment()
+	}
+	if zapErr != nil {
+		log.Printf("⚠️ Failed to initialize zap logger: %v", zapErr)
+		zapLogger = zap.NewNop()
+	}
+	defer zapLogger.Sync()
+
+	// Initialize repositories
+	customerRepo := repository.NewCustomerRepository(db)
+
 	// Initialize handlers
 	profileHandler := handlers.NewProfileHandler(db)
 	addressHandler := handlers.NewAddressHandler(db)
 	wishlistHandler := handlers.NewWishlistHandler(db)
 	orderHistoryHandler := handlers.NewOrderHistoryHandler()
 	measurementHandler := handlers.NewMeasurementHandler(db) // Day 96
+	adminCustomerHandler := handlers.NewAdminCustomerHandler(customerRepo, zapLogger)
 
 	// Setup router
 	router := gin.New()
@@ -145,6 +165,38 @@ func main() {
 			customer.PUT("/measurements/:id", measurementHandler.Update)
 			customer.DELETE("/measurements/:id", measurementHandler.Delete)
 			customer.PUT("/measurements/:id/set-default", measurementHandler.SetDefault)
+		}
+
+		// Admin routes (require admin middleware)
+		admin := v1.Group("/admin")
+		admin.Use(middleware.AuthMiddleware(cfg.JWT.Secret))
+		admin.Use(libmiddleware.RequireAdmin())
+		{
+			// Customer management
+			adminCustomers := admin.Group("/customers")
+			{
+				adminCustomers.GET("", adminCustomerHandler.GetCustomers)
+				adminCustomers.GET("/stats", adminCustomerHandler.GetCustomerStats)
+				adminCustomers.GET("/export", adminCustomerHandler.ExportCustomers)
+				adminCustomers.POST("", adminCustomerHandler.CreateCustomer)
+				adminCustomers.GET("/:id", adminCustomerHandler.GetCustomer)
+				adminCustomers.PUT("/:id", adminCustomerHandler.UpdateCustomer)
+				adminCustomers.DELETE("/:id", adminCustomerHandler.DeleteCustomer)
+				adminCustomers.GET("/:id/orders", adminCustomerHandler.GetCustomerOrders)
+				adminCustomers.GET("/:id/notes", adminCustomerHandler.GetCustomerNotes)
+				adminCustomers.POST("/:id/notes", adminCustomerHandler.AddCustomerNote)
+				adminCustomers.GET("/:id/activity", adminCustomerHandler.GetCustomerActivity)
+				adminCustomers.POST("/:id/segments", adminCustomerHandler.AssignSegment)
+			}
+
+			// Segment management
+			segments := admin.Group("/segments")
+			{
+				segments.GET("", adminCustomerHandler.GetSegments)
+				segments.POST("", adminCustomerHandler.CreateSegment)
+				segments.PUT("/:id", adminCustomerHandler.UpdateSegment)
+				segments.DELETE("/:id", adminCustomerHandler.DeleteSegment)
+			}
 		}
 	}
 
