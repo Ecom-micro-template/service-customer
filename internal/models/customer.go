@@ -149,3 +149,4 @@ type CustomerListFilter struct {
 	SortBy    string     `form:"sort_by"`
 	SortOrder string     `form:"sort_order"`
 }
+
