@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	libmiddleware "github.com/niaga-platform/lib-common/middleware"
+	"github.com/niaga-platform/lib-common/monitoring"
 	"github.com/niaga-platform/service-customer/internal/config"
 	"github.com/niaga-platform/service-customer/internal/handlers"
 	"github.com/niaga-platform/service-customer/internal/middleware"
@@ -91,6 +92,19 @@ func main() {
 	}
 	defer zapLogger.Sync()
 
+	// Initialize Sentry for error tracking
+	sentryMonitor, sentryErr := monitoring.NewSentryMonitor(&monitoring.SentryConfig{
+		DSN:              cfg.Sentry.DSN,
+		Environment:      cfg.Sentry.Environment,
+		Release:          cfg.Sentry.Release,
+		ServiceName:      "customer-service",
+		TracesSampleRate: 0.1,
+	}, zapLogger)
+	if sentryErr != nil {
+		zapLogger.Warn("Failed to initialize Sentry", zap.Error(sentryErr))
+	}
+	defer sentryMonitor.Flush(2 * time.Second)
+
 	// Initialize repositories
 	customerRepo := repository.NewCustomerRepository(db)
 
@@ -106,8 +120,9 @@ func main() {
 	router := gin.New()
 
 	// Apply global middleware
+	router.Use(sentryMonitor.GinMiddleware())
+	router.Use(sentryMonitor.RecoveryMiddleware())
 	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
 
 	// CORS - use environment-based configuration
 	allowedOrigins := getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003")

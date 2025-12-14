@@ -14,6 +14,14 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	NATS     NATSConfig
+	Sentry   SentryConfig
+}
+
+// SentryConfig holds Sentry error tracking configuration
+type SentryConfig struct {
+	DSN         string
+	Environment string
+	Release     string
 }
 
 // ServerConfig holds server configuration
@@ -67,6 +75,11 @@ func Load() *Config {
 		},
 		NATS: NATSConfig{
 			URL: getEnv("NATS_URL", "nats://localhost:4222"),
+		},
+		Sentry: SentryConfig{
+			DSN:         getEnv("SENTRY_DSN", ""),
+			Environment: getEnv("APP_ENV", "development"),
+			Release:     getEnv("APP_VERSION", "1.0.0"),
 		},
 	}
 }
