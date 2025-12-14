@@ -59,6 +59,12 @@ func main() {
 	}
 	log.Println("✅ Customer schema ready")
 
+	// Create crm schema for measurements (if using separate schema)
+	if err := db.Exec("CREATE SCHEMA IF NOT EXISTS crm").Error; err != nil {
+		log.Fatalf("Failed to create crm schema: %v", err)
+	}
+	log.Println("✅ CRM schema ready")
+
 	// Auto-migrate models
 	if err := db.AutoMigrate(
 		&models.Profile{},

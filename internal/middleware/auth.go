@@ -79,6 +79,20 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		// Set user ID in context
 		c.Set("user_id", userID)
+
+		// Set claims for RequireAdmin middleware compatibility
+		c.Set("claims", claims)
+
+		// Set individual claim values for backward compatibility
+		if email, ok := claims["email"].(string); ok {
+			c.Set("email", email)
+			c.Set("user_email", email)
+		}
+		if role, ok := claims["role"].(string); ok {
+			c.Set("role", role)
+			c.Set("user_role", role)
+		}
+
 		c.Next()
 	}
 }
