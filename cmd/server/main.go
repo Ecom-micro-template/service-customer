@@ -76,10 +76,12 @@ func main() {
 	}
 	log.Println("✅ Database migrations completed")
 
-	// Add unique constraint for wishlist
+	// Add unique constraint for wishlist (CUS-001: variant-specific)
+	// Drop old index first (if exists), then create new one with variant support
+	db.Exec(`DROP INDEX IF EXISTS customer.idx_wishlist_user_product`)
 	if err := db.Exec(`
-		CREATE UNIQUE INDEX IF NOT EXISTS idx_wishlist_user_product 
-		ON customer.wishlist_items(user_id, product_id)
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_wishlist_user_product_variant
+		ON customer.wishlist_items(user_id, product_id, COALESCE(variant_id, '00000000-0000-0000-0000-000000000000'))
 	`).Error; err != nil {
 		log.Printf("⚠️  Warning: Failed to create unique index on wishlist: %v", err)
 	}
@@ -171,10 +173,14 @@ func main() {
 			customer.DELETE("/addresses/:id", addressHandler.DeleteAddress)
 			customer.PUT("/addresses/:id/default", addressHandler.SetDefaultAddress)
 
-			// Wishlist
+			// Wishlist (CUS-001: variant-specific support)
 			customer.GET("/wishlist", wishlistHandler.GetWishlist)
+			customer.GET("/wishlist/count", wishlistHandler.GetWishlistCount)
+			customer.GET("/wishlist/check/:productId", wishlistHandler.CheckWishlist)
 			customer.POST("/wishlist", wishlistHandler.AddToWishlist)
 			customer.DELETE("/wishlist/:productId", wishlistHandler.RemoveFromWishlist)
+			customer.DELETE("/wishlist/items/:itemId", wishlistHandler.RemoveWishlistItem)
+			customer.PATCH("/wishlist/items/:itemId", wishlistHandler.UpdateWishlistItem)
 
 			// Order History
 			customer.GET("/orders", orderHistoryHandler.GetOrderHistory)
