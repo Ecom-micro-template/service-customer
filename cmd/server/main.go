@@ -11,9 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 	libmiddleware "github.com/niaga-platform/lib-common/middleware"
 	"github.com/niaga-platform/lib-common/monitoring"
 	"github.com/niaga-platform/service-customer/internal/config"
+	"github.com/niaga-platform/service-customer/internal/events"
 	"github.com/niaga-platform/service-customer/internal/handlers"
 	"github.com/niaga-platform/service-customer/internal/middleware"
 	"github.com/niaga-platform/service-customer/internal/models"
@@ -25,8 +27,9 @@ import (
 )
 
 var (
-	db  *gorm.DB
-	cfg *config.Config
+	db         *gorm.DB
+	cfg        *config.Config
+	natsClient *nats.Conn
 )
 
 func main() {
@@ -70,7 +73,8 @@ func main() {
 		&models.Profile{},
 		&models.Address{},
 		&models.WishlistItem{},
-		&models.CustomerMeasurement{}, // Day 96
+		&models.CustomerMeasurement{},      // Day 96
+		&models.BackInStockSubscription{}, // HI-001
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -121,8 +125,39 @@ func main() {
 	addressHandler := handlers.NewAddressHandler(db)
 	wishlistHandler := handlers.NewWishlistHandler(db)
 	orderHistoryHandler := handlers.NewOrderHistoryHandler()
-	measurementHandler := handlers.NewMeasurementHandler(db) // Day 96
+	measurementHandler := handlers.NewMeasurementHandler(db)           // Day 96
+	backInStockHandler := handlers.NewBackInStockHandler(db)           // HI-001
+	adminBackInStockHandler := handlers.NewAdminBackInStockHandler(db) // HI-001
 	adminCustomerHandler := handlers.NewAdminCustomerHandler(customerRepo, zapLogger)
+
+	// HI-001: Initialize NATS for back-in-stock events
+	var err error
+	natsClient, err = nats.Connect(cfg.NATS.URL)
+	if err != nil {
+		log.Printf("⚠️  NATS connection failed: %v (back-in-stock events disabled)", err)
+	} else {
+		log.Println("✅ NATS connected")
+
+		// Initialize back-in-stock repository and subscriber
+		backInStockRepo := repository.NewBackInStockRepository(db)
+		notificationClient := events.NewSimpleNotificationClient(
+			getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8006"),
+			zapLogger,
+		)
+		backInStockSubscriber := events.NewBackInStockSubscriber(
+			natsClient,
+			backInStockRepo,
+			notificationClient,
+			zapLogger,
+		)
+
+		// Subscribe to restock events
+		if err := backInStockSubscriber.Subscribe(); err != nil {
+			log.Printf("⚠️  Failed to subscribe to restock events: %v", err)
+		} else {
+			log.Println("✅ Subscribed to inventory.product.restocked events")
+		}
+	}
 
 	// Setup router
 	router := gin.New()
@@ -192,6 +227,13 @@ func main() {
 			customer.PUT("/measurements/:id", measurementHandler.Update)
 			customer.DELETE("/measurements/:id", measurementHandler.Delete)
 			customer.PUT("/measurements/:id/set-default", measurementHandler.SetDefault)
+
+			// Back-in-Stock Notifications (HI-001)
+			customer.GET("/back-in-stock", backInStockHandler.GetSubscriptions)
+			customer.POST("/back-in-stock", backInStockHandler.Subscribe)
+			customer.GET("/back-in-stock/check/:productId", backInStockHandler.IsSubscribed)
+			customer.DELETE("/back-in-stock/:productId", backInStockHandler.Unsubscribe)
+			customer.DELETE("/back-in-stock/subscriptions/:id", backInStockHandler.UnsubscribeByID)
 		}
 
 		// Admin routes (require admin middleware)
@@ -224,6 +266,16 @@ func main() {
 				segments.PUT("/:id", adminCustomerHandler.UpdateSegment)
 				segments.DELETE("/:id", adminCustomerHandler.DeleteSegment)
 			}
+
+			// Back-in-Stock Admin (HI-001)
+			backInStock := admin.Group("/back-in-stock")
+			{
+				backInStock.GET("/stats", adminBackInStockHandler.GetStats)
+				backInStock.GET("/subscriptions", adminBackInStockHandler.ListSubscriptions)
+				backInStock.GET("/products/:productId/subscriptions", adminBackInStockHandler.GetByProduct)
+				backInStock.POST("/mark-notified", adminBackInStockHandler.MarkAsNotified)
+				backInStock.DELETE("/cleanup", adminBackInStockHandler.Cleanup)
+			}
 		}
 	}
 
@@ -254,6 +306,13 @@ func main() {
 	<-quit
 
 	log.Println("Shutting down server...")
+
+	// HI-001: Close NATS connection
+	if natsClient != nil {
+		natsClient.Close()
+		log.Println("NATS connection closed")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
