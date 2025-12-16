@@ -142,7 +142,7 @@ func (s *BackInStockSubscriber) handleRestockedEvent(data []byte) {
 		// Get customer info if available
 		if sub.Customer != nil {
 			notification.CustomerEmail = sub.Customer.Email
-			notification.CustomerName = sub.Customer.Name
+			notification.CustomerName = sub.Customer.FirstName + " " + sub.Customer.LastName
 		}
 
 		// Send notification
