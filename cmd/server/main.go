@@ -142,10 +142,10 @@ func main() {
 	adminCustomerHandler := handlers.NewAdminCustomerHandler(customerRepo, zapLogger)
 
 	// HI-001: Initialize NATS for back-in-stock events
-	var err error
-	natsClient, err = nats.Connect(cfg.NATS.URL)
-	if err != nil {
-		log.Printf("⚠️  NATS connection failed: %v (back-in-stock events disabled)", err)
+	var natsErr error
+	natsClient, natsErr = nats.Connect(cfg.NATS.URL)
+	if natsErr != nil {
+		log.Printf("⚠️  NATS connection failed: %v (back-in-stock events disabled)", natsErr)
 	} else {
 		log.Println("✅ NATS connected")
 
