@@ -54,7 +54,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	log.Println("✅ Database connected")
+
+	// Configure connection pooling for production performance
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+
+	log.Println("✅ Database connected with connection pooling")
 
 	// Create schema if it doesn't exist
 	if err := db.Exec("CREATE SCHEMA IF NOT EXISTS customer").Error; err != nil {
