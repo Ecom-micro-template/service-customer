@@ -37,13 +37,28 @@ type CustomerRepository interface {
 	GetStats() (*CustomerStats, error)
 }
 
+// CustomerOrderItem represents an item in a customer order
+type CustomerOrderItem struct {
+	ID          uuid.UUID `json:"id"`
+	ProductID   uuid.UUID `json:"product_id"`
+	ProductName string    `json:"product_name"`
+	SKU         string    `json:"sku"`
+	Quantity    int       `json:"quantity"`
+	UnitPrice   float64   `json:"unit_price"`
+	Total       float64   `json:"total"`
+	ImageURL    string    `json:"image_url"`
+}
+
 // CustomerOrderSummary represents a summarized order for a customer
 type CustomerOrderSummary struct {
-	ID        uuid.UUID `json:"id"`
-	OrderNum  string    `json:"order_number"`
-	Total     float64   `json:"total"`
-	Status    string    `json:"status"`
-	CreatedAt string    `json:"created_at"`
+	ID            uuid.UUID           `json:"id"`
+	OrderNum      string              `json:"order_number"`
+	Total         float64             `json:"total"`
+	Subtotal      float64             `json:"subtotal"`
+	Status        string              `json:"status"`
+	PaymentStatus string              `json:"payment_status"`
+	Items         []CustomerOrderItem `json:"items"`
+	CreatedAt     string              `json:"created_at"`
 }
 
 // CustomerStats represents customer statistics
@@ -144,8 +159,66 @@ func (r *customerRepository) Delete(id uuid.UUID) error {
 }
 
 func (r *customerRepository) GetCustomerOrders(customerID uuid.UUID, page, limit int) ([]CustomerOrderSummary, int64, error) {
-	// Orders are in a different service, returning empty for now
-	return []CustomerOrderSummary{}, 0, nil
+	var total int64
+
+	offset := (page - 1) * limit
+
+	// Count total orders
+	if err := r.db.Table("public.orders").
+		Where("customer_id = ? AND deleted_at IS NULL", customerID).
+		Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Struct for raw order data
+	type rawOrder struct {
+		ID            uuid.UUID `gorm:"column:id"`
+		OrderNumber   string    `gorm:"column:order_number"`
+		Total         float64   `gorm:"column:total"`
+		Subtotal      float64   `gorm:"column:subtotal"`
+		Status        string    `gorm:"column:status"`
+		PaymentStatus string    `gorm:"column:payment_status"`
+		CreatedAt     string    `gorm:"column:created_at"`
+	}
+
+	var rawOrders []rawOrder
+
+	// Fetch orders
+	if err := r.db.Table("public.orders").
+		Select("id, order_number, total, subtotal, status, payment_status, created_at").
+		Where("customer_id = ? AND deleted_at IS NULL", customerID).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Scan(&rawOrders).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Convert to CustomerOrderSummary and fetch items for each order
+	orders := make([]CustomerOrderSummary, len(rawOrders))
+	for i, ro := range rawOrders {
+		orders[i] = CustomerOrderSummary{
+			ID:            ro.ID,
+			OrderNum:      ro.OrderNumber,
+			Total:         ro.Total,
+			Subtotal:      ro.Subtotal,
+			Status:        ro.Status,
+			PaymentStatus: ro.PaymentStatus,
+			CreatedAt:     ro.CreatedAt,
+			Items:         []CustomerOrderItem{},
+		}
+
+		// Fetch order items
+		var items []CustomerOrderItem
+		if err := r.db.Table("public.order_items").
+			Select("id, product_id, product_name, sku, quantity, unit_price, (quantity * unit_price) as total, image_url").
+			Where("order_id = ?", ro.ID).
+			Scan(&items).Error; err == nil {
+			orders[i].Items = items
+		}
+	}
+
+	return orders, total, nil
 }
 
 func (r *customerRepository) AddNote(customerID uuid.UUID, note string, isPrivate bool, createdBy uuid.UUID) (*models.CustomerNote, error) {
