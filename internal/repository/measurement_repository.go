@@ -23,10 +23,12 @@ func (r *MeasurementRepository) Create(ctx context.Context, measurement *models.
 	return r.db.WithContext(ctx).Create(measurement).Error
 }
 
-// GetByID retrieves a measurement by ID
-func (r *MeasurementRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.CustomerMeasurement, error) {
+// GetByID retrieves a measurement by ID with user ownership check (IDOR protection)
+func (r *MeasurementRepository) GetByID(ctx context.Context, id, userID uuid.UUID) (*models.CustomerMeasurement, error) {
 	var measurement models.CustomerMeasurement
-	err := r.db.WithContext(ctx).First(&measurement, "id = ?", id).Error
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", id, userID).
+		First(&measurement).Error
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +62,18 @@ func (r *MeasurementRepository) Update(ctx context.Context, measurement *models.
 	return r.db.WithContext(ctx).Save(measurement).Error
 }
 
-// Delete deletes a measurement
-func (r *MeasurementRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&models.CustomerMeasurement{}, "id = ?", id).Error
+// Delete deletes a measurement with user ownership check (IDOR protection)
+func (r *MeasurementRepository) Delete(ctx context.Context, id, userID uuid.UUID) error {
+	result := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", id, userID).
+		Delete(&models.CustomerMeasurement{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // SetDefault sets a measurement as default and unsets others for the user

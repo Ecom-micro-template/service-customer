@@ -106,8 +106,21 @@ func (h *MeasurementHandler) Create(c *gin.Context) {
 	})
 }
 
-// GetByID retrieves a measurement by ID
+// GetByID retrieves a measurement by ID (with IDOR protection)
 func (h *MeasurementHandler) GetByID(c *gin.Context) {
+	// Get user ID from auth context for ownership check
+	userIDStr := c.GetHeader("X-User-ID")
+	if userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -115,7 +128,8 @@ func (h *MeasurementHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	measurement, err := h.repo.GetByID(c.Request.Context(), id)
+	// IDOR protection: only fetch if owned by user
+	measurement, err := h.repo.GetByID(c.Request.Context(), id, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Measurement not found"})
@@ -154,8 +168,21 @@ func (h *MeasurementHandler) List(c *gin.Context) {
 	})
 }
 
-// Update updates a measurement
+// Update updates a measurement (with IDOR protection)
 func (h *MeasurementHandler) Update(c *gin.Context) {
+	// Get user ID from auth context for ownership check
+	userIDStr := c.GetHeader("X-User-ID")
+	if userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -169,7 +196,8 @@ func (h *MeasurementHandler) Update(c *gin.Context) {
 		return
 	}
 
-	measurement, err := h.repo.GetByID(c.Request.Context(), id)
+	// IDOR protection: only fetch if owned by user
+	measurement, err := h.repo.GetByID(c.Request.Context(), id, userID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Measurement not found"})
@@ -221,8 +249,21 @@ func (h *MeasurementHandler) Update(c *gin.Context) {
 	})
 }
 
-// Delete deletes a measurement
+// Delete deletes a measurement (with IDOR protection)
 func (h *MeasurementHandler) Delete(c *gin.Context) {
+	// Get user ID from auth context for ownership check
+	userIDStr := c.GetHeader("X-User-ID")
+	if userIDStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -230,7 +271,12 @@ func (h *MeasurementHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := h.repo.Delete(c.Request.Context(), id); err != nil {
+	// IDOR protection: only delete if owned by user
+	if err := h.repo.Delete(c.Request.Context(), id, userID); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Measurement not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete measurement"})
 		return
 	}
