@@ -1,12 +1,4 @@
-// Package models contains GORM persistence models for the customer service.
-//
-// Deprecated: This package is being migrated to DDD architecture.
-// For new development, use:
-//   - Domain models: github.com/niaga-platform/service-customer/internal/domain/measurement
-//   - Persistence: github.com/niaga-platform/service-customer/internal/infrastructure/persistence
-//
-// Existing code can continue using this package during the transition period.
-package models
+package persistence
 
 import (
 	"time"
@@ -15,12 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// CustomerMeasurement represents body measurements for a customer
-type CustomerMeasurement struct {
+// MeasurementModel is the GORM persistence model for CustomerMeasurement.
+type MeasurementModel struct {
 	ID     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id" binding:"required"`
-	Name   *string   `gorm:"type:varchar(100)" json:"name,omitempty"`                    // e.g., "My Baju Kurung Size"
-	Gender string    `gorm:"type:varchar(20);not null" json:"gender" binding:"required"` // men, women
+	UserID uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
+	Name   *string   `gorm:"type:varchar(100)" json:"name,omitempty"`
+	Gender string    `gorm:"type:varchar(20);not null" json:"gender"`
 
 	// Upper body measurements (cm)
 	Bust          *float64 `gorm:"type:decimal(5,1)" json:"bust,omitempty"`
@@ -47,15 +39,15 @@ type CustomerMeasurement struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// TableName specifies the table name for CustomerMeasurement
-func (CustomerMeasurement) TableName() string {
+// TableName specifies the table name.
+func (MeasurementModel) TableName() string {
 	return "crm.customer_measurements"
 }
 
-// BeforeCreate hook to generate UUID if not provided
-func (cm *CustomerMeasurement) BeforeCreate(tx *gorm.DB) error {
-	if cm.ID == uuid.Nil {
-		cm.ID = uuid.New()
+// BeforeCreate hook to generate UUID if not provided.
+func (m *MeasurementModel) BeforeCreate(tx *gorm.DB) error {
+	if m.ID == uuid.Nil {
+		m.ID = uuid.New()
 	}
 	return nil
 }

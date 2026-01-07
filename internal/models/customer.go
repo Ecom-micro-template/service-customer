@@ -1,3 +1,11 @@
+// Package models contains GORM persistence models for the customer service.
+//
+// Deprecated: This package is being migrated to DDD architecture.
+// For new development, use:
+//   - Domain models: github.com/niaga-platform/service-customer/internal/domain/customer
+//   - Persistence: github.com/niaga-platform/service-customer/internal/infrastructure/persistence
+//
+// Existing code can continue using this package during the transition period.
 package models
 
 import (
@@ -149,4 +157,3 @@ type CustomerListFilter struct {
 	SortBy    string     `form:"sort_by"`
 	SortOrder string     `form:"sort_order"`
 }
-

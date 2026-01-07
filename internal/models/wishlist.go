@@ -1,3 +1,11 @@
+// Package models contains GORM persistence models for the customer service.
+//
+// Deprecated: This package is being migrated to DDD architecture.
+// For new development, use:
+//   - Domain models: github.com/niaga-platform/service-customer/internal/domain/wishlist
+//   - Persistence: github.com/niaga-platform/service-customer/internal/infrastructure/persistence
+//
+// Existing code can continue using this package during the transition period.
 package models
 
 import (
@@ -14,7 +22,7 @@ type WishlistItem struct {
 	ProductID uuid.UUID `gorm:"type:uuid;not null" json:"product_id"`
 
 	// Variant-specific fields (CUS-001)
-	VariantID   *uuid.UUID `gorm:"type:uuid" json:"variant_id,omitempty"`   // Optional: specific variant (null = any variant)
+	VariantID   *uuid.UUID `gorm:"type:uuid" json:"variant_id,omitempty"` // Optional: specific variant (null = any variant)
 	VariantSKU  *string    `gorm:"type:varchar(50)" json:"variant_sku,omitempty"`
 	VariantName *string    `gorm:"type:varchar(100)" json:"variant_name,omitempty"` // e.g., "Red / Large"
 
