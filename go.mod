@@ -1,4 +1,4 @@
-module github.com/niaga-platform/service-customer
+module github.com/Ecom-micro-template/service-customer
 
 go 1.24.0
 
@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.37.0
-	github.com/niaga-platform/lib-common v0.0.0-00010101000000-000000000000
+	github.com/Ecom-micro-template/lib-common-go v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/postgres v1.5.9
@@ -67,4 +67,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/niaga-platform/lib-common => ../lib-common
+replace github.com/Ecom-micro-template/lib-common-go => ../lib-common

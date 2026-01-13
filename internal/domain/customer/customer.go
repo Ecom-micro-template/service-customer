@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/niaga-platform/service-customer/internal/domain/shared"
+	"github.com/Ecom-micro-template/service-customer/internal/domain/shared"
 )
 
 // Domain errors for Customer aggregate

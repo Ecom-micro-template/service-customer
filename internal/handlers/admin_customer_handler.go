@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/niaga-platform/lib-common/response"
-	"github.com/niaga-platform/service-customer/internal/models"
-	"github.com/niaga-platform/service-customer/internal/repository"
+	"github.com/Ecom-micro-template/lib-common-go/response"
+	"github.com/Ecom-micro-template/service-customer/internal/models"
+	"github.com/Ecom-micro-template/service-customer/internal/repository"
 	"go.uber.org/zap"
 )
 

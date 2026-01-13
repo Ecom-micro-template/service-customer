@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/niaga-platform/service-customer/internal/middleware"
-	"github.com/niaga-platform/service-customer/internal/models"
-	"github.com/niaga-platform/service-customer/internal/repository"
+	"github.com/Ecom-micro-template/service-customer/internal/middleware"
+	"github.com/Ecom-micro-template/service-customer/internal/models"
+	"github.com/Ecom-micro-template/service-customer/internal/repository"
 	"gorm.io/gorm"
 )
 

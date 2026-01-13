@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/niaga-platform/service-customer/internal/domain/customer"
-	"github.com/niaga-platform/service-customer/internal/domain/shared"
+	"github.com/Ecom-micro-template/service-customer/internal/domain/customer"
+	"github.com/Ecom-micro-template/service-customer/internal/domain/shared"
 	"gorm.io/gorm"
 )
 

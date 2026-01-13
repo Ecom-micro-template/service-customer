@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/niaga-platform/service-customer/internal/middleware"
+	"github.com/Ecom-micro-template/service-customer/internal/middleware"
 )
 
 // OrderHistoryHandler handles order history requests
@@ -22,7 +22,7 @@ type OrderHistoryHandler struct {
 func NewOrderHistoryHandler() *OrderHistoryHandler {
 	orderURL := os.Getenv("ORDER_SERVICE_URL")
 	if orderURL == "" {
-		orderURL = "http://kilang-order:8005"
+		orderURL = "http://ecommerce-order:8005"
 	}
 
 	return &OrderHistoryHandler{
