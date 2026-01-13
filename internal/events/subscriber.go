@@ -27,20 +27,20 @@ type ProductRestockedEvent struct {
 // BackInStockSubscriber handles back-in-stock event subscriptions
 type BackInStockSubscriber struct {
 	nc                 *nats.Conn
-	backInStockRepo    *repository.BackInStockRepository
+	backInStockRepo    *persistence.BackInStockRepository
 	notificationClient NotificationClient
 	logger             *zap.Logger
 }
 
 // NotificationClient interface for sending notifications
 type NotificationClient interface {
-	SendBackInStockNotification(notification models.BackInStockNotification) error
+	SendBackInStockNotification(notification domain.BackInStockNotification) error
 }
 
 // NewBackInStockSubscriber creates a new subscriber
 func NewBackInStockSubscriber(
 	nc *nats.Conn,
-	backInStockRepo *repository.BackInStockRepository,
+	backInStockRepo *persistence.BackInStockRepository,
 	notificationClient NotificationClient,
 	logger *zap.Logger,
 ) *BackInStockSubscriber {
@@ -123,7 +123,7 @@ func (s *BackInStockSubscriber) handleRestockedEvent(data []byte) {
 	var notifiedIDs []uuid.UUID
 	for _, sub := range subscriptions {
 		// Build notification
-		notification := models.BackInStockNotification{
+		notification := domain.BackInStockNotification{
 			SubscriptionID: sub.ID.String(),
 			CustomerID:     sub.CustomerID.String(),
 			ProductID:      sub.ProductID.String(),
@@ -184,7 +184,7 @@ func NewSimpleNotificationClient(baseURL string, logger *zap.Logger) *SimpleNoti
 }
 
 // SendBackInStockNotification sends a back-in-stock notification
-func (c *SimpleNotificationClient) SendBackInStockNotification(notification models.BackInStockNotification) error {
+func (c *SimpleNotificationClient) SendBackInStockNotification(notification domain.BackInStockNotification) error {
 	// In a real implementation, this would make an HTTP call to the notification service
 	// For now, we'll log the notification
 	c.logger.Info("Sending back-in-stock notification",

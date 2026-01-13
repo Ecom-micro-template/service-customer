@@ -12,13 +12,13 @@ import (
 
 // WishlistHandler handles wishlist-related requests
 type WishlistHandler struct {
-	repo *repository.WishlistRepository
+	repo *persistence.WishlistRepository
 }
 
 // NewWishlistHandler creates a new wishlist handler
 func NewWishlistHandler(db *gorm.DB) *WishlistHandler {
 	return &WishlistHandler{
-		repo: repository.NewWishlistRepository(db),
+		repo: persistence.NewWishlistRepository(db),
 	}
 }
 
@@ -84,7 +84,7 @@ func (h *WishlistHandler) AddToWishlist(c *gin.Context) {
 		notifyOnSale = *req.NotifyOnSale
 	}
 
-	input := repository.AddWishlistItemInput{
+	input := persistence.AddWishlistItemInput{
 		ProductID:    req.ProductID,
 		VariantID:    req.VariantID,
 		VariantSKU:   req.VariantSKU,

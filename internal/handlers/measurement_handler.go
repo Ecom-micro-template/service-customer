@@ -12,13 +12,13 @@ import (
 
 // MeasurementHandler handles customer measurement-related requests
 type MeasurementHandler struct {
-	repo *repository.MeasurementRepository
+	repo *persistence.MeasurementRepository
 }
 
 // NewMeasurementHandler creates a new measurement handler
 func NewMeasurementHandler(db *gorm.DB) *MeasurementHandler {
 	return &MeasurementHandler{
-		repo: repository.NewMeasurementRepository(db),
+		repo: persistence.NewMeasurementRepository(db),
 	}
 }
 
@@ -69,7 +69,7 @@ func (h *MeasurementHandler) Create(c *gin.Context) {
 		isDefault = *req.IsDefault
 	}
 
-	measurement := &models.CustomerMeasurement{
+	measurement := &domain.CustomerMeasurement{
 		UserID:        userID,
 		Name:          req.Name,
 		Gender:        req.Gender,

@@ -81,11 +81,11 @@ func main() {
 
 	// Auto-migrate models
 	if err := db.AutoMigrate(
-		&models.Profile{},
-		&models.Address{},
-		&models.WishlistItem{},
-		&models.CustomerMeasurement{},      // Day 96
-		&models.BackInStockSubscription{}, // HI-001
+		&domain.Profile{},
+		&domain.Address{},
+		&domain.WishlistItem{},
+		&domain.CustomerMeasurement{},      // Day 96
+		&domain.BackInStockSubscription{}, // HI-001
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -129,7 +129,7 @@ func main() {
 	defer sentryMonitor.Flush(2 * time.Second)
 
 	// Initialize repositories
-	customerRepo := repository.NewCustomerRepository(db)
+	customerRepo := persistence.NewCustomerRepository(db)
 
 	// Initialize handlers
 	profileHandler := handlers.NewProfileHandler(db)
@@ -150,7 +150,7 @@ func main() {
 		log.Println("✅ NATS connected")
 
 		// Initialize back-in-stock repository and subscriber
-		backInStockRepo := repository.NewBackInStockRepository(db)
+		backInStockRepo := persistence.NewBackInStockRepository(db)
 		notificationClient := events.NewSimpleNotificationClient(
 			getEnv("NOTIFICATION_SERVICE_URL", "http://localhost:8006"),
 			zapLogger,

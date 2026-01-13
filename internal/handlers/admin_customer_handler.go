@@ -13,11 +13,11 @@ import (
 )
 
 type AdminCustomerHandler struct {
-	customerRepo repository.CustomerRepository
+	customerRepo persistence.CustomerRepository
 	logger       *zap.Logger
 }
 
-func NewAdminCustomerHandler(customerRepo repository.CustomerRepository, logger *zap.Logger) *AdminCustomerHandler {
+func NewAdminCustomerHandler(customerRepo persistence.CustomerRepository, logger *zap.Logger) *AdminCustomerHandler {
 	return &AdminCustomerHandler{
 		customerRepo: customerRepo,
 		logger:       logger,
@@ -29,7 +29,7 @@ func (h *AdminCustomerHandler) GetCustomers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 
-	filter := models.CustomerListFilter{
+	filter := domain.CustomerListFilter{
 		Status:    c.Query("status"),
 		Segment:   c.Query("segment"),
 		Search:    c.Query("search"),
@@ -106,7 +106,7 @@ func (h *AdminCustomerHandler) GetCustomer(c *gin.Context) {
 
 // CreateCustomer handles POST /admin/customers
 func (h *AdminCustomerHandler) CreateCustomer(c *gin.Context) {
-	var req models.CreateCustomerRequest
+	var req domain.CreateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request", err.Error())
 		return
@@ -138,7 +138,7 @@ func (h *AdminCustomerHandler) UpdateCustomer(c *gin.Context) {
 		return
 	}
 
-	var req models.UpdateCustomerRequest
+	var req domain.UpdateCustomerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request", err.Error())
 		return
@@ -380,7 +380,7 @@ func (h *AdminCustomerHandler) AssignSegment(c *gin.Context) {
 func (h *AdminCustomerHandler) ExportCustomers(c *gin.Context) {
 	format := c.DefaultQuery("format", "csv")
 
-	filter := models.CustomerListFilter{
+	filter := domain.CustomerListFilter{
 		Status:  c.Query("status"),
 		Segment: c.Query("segment"),
 		Search:  c.Query("search"),

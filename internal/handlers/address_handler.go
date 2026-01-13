@@ -13,13 +13,13 @@ import (
 
 // AddressHandler handles address-related requests
 type AddressHandler struct {
-	repo *repository.AddressRepository
+	repo *persistence.AddressRepository
 }
 
 // NewAddressHandler creates a new address handler
 func NewAddressHandler(db *gorm.DB) *AddressHandler {
 	return &AddressHandler{
-		repo: repository.NewAddressRepository(db),
+		repo: persistence.NewAddressRepository(db),
 	}
 }
 
@@ -87,7 +87,7 @@ func (h *AddressHandler) CreateAddress(c *gin.Context) {
 		return
 	}
 
-	address := &models.Address{
+	address := &domain.Address{
 		UserID:        userID,
 		Label:         req.Label,
 		RecipientName: req.RecipientName,

@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func setupWishlistTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&models.WishlistItem{})
+	err = db.AutoMigrate(&domain.WishlistItem{})
 	require.NoError(t, err)
 
 	return db

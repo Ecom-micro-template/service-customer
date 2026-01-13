@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -16,7 +16,7 @@ func setupAddressTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&models.Address{})
+	err = db.AutoMigrate(&domain.Address{})
 	require.NoError(t, err)
 
 	return db
@@ -28,7 +28,7 @@ func TestAddressRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	address := &models.Address{
+	address := &domain.Address{
 		UserID:        userID,
 		Label:         "Home",
 		RecipientName: "John Doe",
@@ -54,7 +54,7 @@ func TestAddressRepository_ListByUserID(t *testing.T) {
 	userID := uuid.New()
 
 	// Create multiple addresses
-	addresses := []*models.Address{
+	addresses := []*domain.Address{
 		{
 			UserID:        userID,
 			Label:         "Home",
@@ -101,7 +101,7 @@ func TestAddressRepository_SetDefault(t *testing.T) {
 	userID := uuid.New()
 
 	// Create first address as default
-	addr1 := &models.Address{
+	addr1 := &domain.Address{
 		UserID:        userID,
 		Label:         "Home",
 		RecipientName: "John Doe",
@@ -117,7 +117,7 @@ func TestAddressRepository_SetDefault(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create second address
-	addr2 := &models.Address{
+	addr2 := &domain.Address{
 		UserID:        userID,
 		Label:         "Office",
 		RecipientName: "John Doe",
@@ -156,7 +156,7 @@ func TestAddressRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	address := &models.Address{
+	address := &domain.Address{
 		UserID:        userID,
 		Label:         "Home",
 		RecipientName: "John Doe",
@@ -187,7 +187,7 @@ func TestAddressRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	address := &models.Address{
+	address := &domain.Address{
 		UserID:        userID,
 		Label:         "Home",
 		RecipientName: "John Doe",

@@ -13,13 +13,13 @@ import (
 
 // ProfileHandler handles profile-related requests
 type ProfileHandler struct {
-	repo *repository.ProfileRepository
+	repo *persistence.ProfileRepository
 }
 
 // NewProfileHandler creates a new profile handler
 func NewProfileHandler(db *gorm.DB) *ProfileHandler {
 	return &ProfileHandler{
-		repo: repository.NewProfileRepository(db),
+		repo: persistence.NewProfileRepository(db),
 	}
 }
 
@@ -86,7 +86,7 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 
 	// Create new profile if doesn't exist
 	if profile == nil {
-		profile = &models.Profile{
+		profile = &domain.Profile{
 			ID: userID,
 		}
 	}

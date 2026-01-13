@@ -1,4 +1,4 @@
-// Package models contains GORM persistence models for the customer service.
+// Package domain contains GORM persistence models for the customer service.
 //
 // Deprecated: This package is being migrated to DDD architecture.
 // For new development, use:
@@ -6,7 +6,7 @@
 //   - Persistence: github.com/Ecom-micro-template/service-customer/internal/infrastructure/persistence
 //
 // Existing code can continue using this package during the transition period.
-package models
+package domain
 
 import (
 	"time"
@@ -26,9 +26,13 @@ type Customer struct {
 	Status      string         `gorm:"type:varchar(20);default:'active'" json:"status"`
 	TotalOrders int            `gorm:"default:0" json:"total_orders"`
 	TotalSpent  float64        `gorm:"type:decimal(12,2);default:0" json:"total_spent"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+
+	// Version for optimistic locking
+	Version int64 `gorm:"column:version;default:1" json:"version"`
+
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (c *Customer) BeforeCreate(tx *gorm.DB) error {
@@ -38,8 +42,48 @@ func (c *Customer) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// BeforeUpdate hook with optimistic locking
+func (c *Customer) BeforeUpdate(tx *gorm.DB) error {
+	tx.Statement.Where("version = ?", c.Version)
+	c.Version++
+	return nil
+}
+
 func (Customer) TableName() string {
 	return "public.customers"
+}
+
+// --- Domain Behavior Methods ---
+
+// Activate activates the customer
+func (c *Customer) Activate() {
+	c.Status = "active"
+}
+
+// Deactivate deactivates the customer
+func (c *Customer) Deactivate() {
+	c.Status = "inactive"
+}
+
+// Suspend suspends the customer
+func (c *Customer) Suspend() {
+	c.Status = "suspended"
+}
+
+// IsActive checks if customer is active
+func (c *Customer) IsActive() bool {
+	return c.Status == "active"
+}
+
+// IncrementOrders increments order count and adds to total spent
+func (c *Customer) IncrementOrders(amount float64) {
+	c.TotalOrders++
+	c.TotalSpent += amount
+}
+
+// GetFullName returns full name
+func (c *Customer) GetFullName() string {
+	return c.FirstName + " " + c.LastName
 }
 
 // CreateCustomerRequest represents a request to create a customer

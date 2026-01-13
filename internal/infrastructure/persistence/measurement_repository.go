@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -19,13 +19,13 @@ func NewMeasurementRepository(db *gorm.DB) *MeasurementRepository {
 }
 
 // Create creates a new customer measurement
-func (r *MeasurementRepository) Create(ctx context.Context, measurement *models.CustomerMeasurement) error {
+func (r *MeasurementRepository) Create(ctx context.Context, measurement *domain.CustomerMeasurement) error {
 	return r.db.WithContext(ctx).Create(measurement).Error
 }
 
 // GetByID retrieves a measurement by ID with user ownership check (IDOR protection)
-func (r *MeasurementRepository) GetByID(ctx context.Context, id, userID uuid.UUID) (*models.CustomerMeasurement, error) {
-	var measurement models.CustomerMeasurement
+func (r *MeasurementRepository) GetByID(ctx context.Context, id, userID uuid.UUID) (*domain.CustomerMeasurement, error) {
+	var measurement domain.CustomerMeasurement
 	err := r.db.WithContext(ctx).
 		Where("id = ? AND user_id = ?", id, userID).
 		First(&measurement).Error
@@ -36,8 +36,8 @@ func (r *MeasurementRepository) GetByID(ctx context.Context, id, userID uuid.UUI
 }
 
 // GetByUserID retrieves all measurements for a user
-func (r *MeasurementRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]models.CustomerMeasurement, error) {
-	var measurements []models.CustomerMeasurement
+func (r *MeasurementRepository) GetByUserID(ctx context.Context, userID uuid.UUID) ([]domain.CustomerMeasurement, error) {
+	var measurements []domain.CustomerMeasurement
 	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("is_default DESC, created_at DESC").
@@ -46,8 +46,8 @@ func (r *MeasurementRepository) GetByUserID(ctx context.Context, userID uuid.UUI
 }
 
 // GetDefaultByUserID retrieves the default measurement for a user
-func (r *MeasurementRepository) GetDefaultByUserID(ctx context.Context, userID uuid.UUID) (*models.CustomerMeasurement, error) {
-	var measurement models.CustomerMeasurement
+func (r *MeasurementRepository) GetDefaultByUserID(ctx context.Context, userID uuid.UUID) (*domain.CustomerMeasurement, error) {
+	var measurement domain.CustomerMeasurement
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND is_default = ?", userID, true).
 		First(&measurement).Error
@@ -58,7 +58,7 @@ func (r *MeasurementRepository) GetDefaultByUserID(ctx context.Context, userID u
 }
 
 // Update updates a measurement
-func (r *MeasurementRepository) Update(ctx context.Context, measurement *models.CustomerMeasurement) error {
+func (r *MeasurementRepository) Update(ctx context.Context, measurement *domain.CustomerMeasurement) error {
 	return r.db.WithContext(ctx).Save(measurement).Error
 }
 
@@ -66,7 +66,7 @@ func (r *MeasurementRepository) Update(ctx context.Context, measurement *models.
 func (r *MeasurementRepository) Delete(ctx context.Context, id, userID uuid.UUID) error {
 	result := r.db.WithContext(ctx).
 		Where("id = ? AND user_id = ?", id, userID).
-		Delete(&models.CustomerMeasurement{})
+		Delete(&domain.CustomerMeasurement{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -80,14 +80,14 @@ func (r *MeasurementRepository) Delete(ctx context.Context, id, userID uuid.UUID
 func (r *MeasurementRepository) SetDefault(ctx context.Context, userID, measurementID uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Unset all default measurements for this user
-		if err := tx.Model(&models.CustomerMeasurement{}).
+		if err := tx.Model(&domain.CustomerMeasurement{}).
 			Where("user_id = ?", userID).
 			Update("is_default", false).Error; err != nil {
 			return err
 		}
 
 		// Set the new default
-		return tx.Model(&models.CustomerMeasurement{}).
+		return tx.Model(&domain.CustomerMeasurement{}).
 			Where("id = ? AND user_id = ?", measurementID, userID).
 			Update("is_default", true).Error
 	})

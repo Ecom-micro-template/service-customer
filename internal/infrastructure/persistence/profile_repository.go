@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -20,8 +20,8 @@ func NewProfileRepository(db *gorm.DB) *ProfileRepository {
 }
 
 // GetByUserID retrieves a profile by user ID
-func (r *ProfileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*models.Profile, error) {
-	var profile models.Profile
+func (r *ProfileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Profile, error) {
+	var profile domain.Profile
 	err := r.db.WithContext(ctx).Where("id = ?", userID).First(&profile).Error
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (r *ProfileRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (
 }
 
 // Upsert creates or updates a profile
-func (r *ProfileRepository) Upsert(ctx context.Context, profile *models.Profile) error {
+func (r *ProfileRepository) Upsert(ctx context.Context, profile *domain.Profile) error {
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"full_name", "email", "phone", "date_of_birth", "gender", "profile_picture", "updated_at"}),
@@ -38,11 +38,11 @@ func (r *ProfileRepository) Upsert(ctx context.Context, profile *models.Profile)
 }
 
 // Create creates a new profile
-func (r *ProfileRepository) Create(ctx context.Context, profile *models.Profile) error {
+func (r *ProfileRepository) Create(ctx context.Context, profile *domain.Profile) error {
 	return r.db.WithContext(ctx).Create(profile).Error
 }
 
 // Update updates an existing profile
-func (r *ProfileRepository) Update(ctx context.Context, profile *models.Profile) error {
+func (r *ProfileRepository) Update(ctx context.Context, profile *domain.Profile) error {
 	return r.db.WithContext(ctx).Save(profile).Error
 }

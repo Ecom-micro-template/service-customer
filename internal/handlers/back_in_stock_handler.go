@@ -16,13 +16,13 @@ import (
 
 // BackInStockHandler handles back-in-stock subscription requests
 type BackInStockHandler struct {
-	repo *repository.BackInStockRepository
+	repo *persistence.BackInStockRepository
 }
 
 // NewBackInStockHandler creates a new back-in-stock handler
 func NewBackInStockHandler(db *gorm.DB) *BackInStockHandler {
 	return &BackInStockHandler{
-		repo: repository.NewBackInStockRepository(db),
+		repo: persistence.NewBackInStockRepository(db),
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *BackInStockHandler) Subscribe(c *gin.Context) {
 		return
 	}
 
-	var input models.BackInStockSubscribeInput
+	var input domain.BackInStockSubscribeInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -185,13 +185,13 @@ func (h *BackInStockHandler) IsSubscribed(c *gin.Context) {
 
 // AdminBackInStockHandler handles admin back-in-stock operations
 type AdminBackInStockHandler struct {
-	repo *repository.BackInStockRepository
+	repo *persistence.BackInStockRepository
 }
 
 // NewAdminBackInStockHandler creates a new admin handler
 func NewAdminBackInStockHandler(db *gorm.DB) *AdminBackInStockHandler {
 	return &AdminBackInStockHandler{
-		repo: repository.NewBackInStockRepository(db),
+		repo: persistence.NewBackInStockRepository(db),
 	}
 }
 

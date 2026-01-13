@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func NewBackInStockRepository(db *gorm.DB) *BackInStockRepository {
 }
 
 // Subscribe creates a new subscription or returns existing one
-func (r *BackInStockRepository) Subscribe(ctx context.Context, customerID uuid.UUID, input models.BackInStockSubscribeInput) (*models.BackInStockSubscription, error) {
+func (r *BackInStockRepository) Subscribe(ctx context.Context, customerID uuid.UUID, input domain.BackInStockSubscribeInput) (*domain.BackInStockSubscription, error) {
 	productID, err := uuid.Parse(input.ProductID)
 	if err != nil {
 		return nil, errors.New("invalid product ID")
@@ -38,7 +38,7 @@ func (r *BackInStockRepository) Subscribe(ctx context.Context, customerID uuid.U
 	}
 
 	// Check if subscription already exists
-	var existing models.BackInStockSubscription
+	var existing domain.BackInStockSubscription
 	query := r.db.WithContext(ctx).Where("customer_id = ? AND product_id = ?", customerID, productID)
 	if variantID != nil {
 		query = query.Where("variant_id = ?", variantID)
@@ -52,7 +52,7 @@ func (r *BackInStockRepository) Subscribe(ctx context.Context, customerID uuid.U
 	}
 
 	// Create new subscription
-	subscription := models.BackInStockSubscription{
+	subscription := domain.BackInStockSubscription{
 		CustomerID:   customerID,
 		ProductID:    productID,
 		VariantID:    variantID,
@@ -82,19 +82,19 @@ func (r *BackInStockRepository) Unsubscribe(ctx context.Context, customerID, pro
 		query = query.Where("variant_id IS NULL")
 	}
 
-	return query.Delete(&models.BackInStockSubscription{}).Error
+	return query.Delete(&domain.BackInStockSubscription{}).Error
 }
 
 // UnsubscribeByID removes a subscription by ID
 func (r *BackInStockRepository) UnsubscribeByID(ctx context.Context, customerID, subscriptionID uuid.UUID) error {
 	return r.db.WithContext(ctx).
 		Where("id = ? AND customer_id = ?", subscriptionID, customerID).
-		Delete(&models.BackInStockSubscription{}).Error
+		Delete(&domain.BackInStockSubscription{}).Error
 }
 
 // GetByCustomer returns all subscriptions for a customer
-func (r *BackInStockRepository) GetByCustomer(ctx context.Context, customerID uuid.UUID) ([]models.BackInStockSubscription, error) {
-	var subscriptions []models.BackInStockSubscription
+func (r *BackInStockRepository) GetByCustomer(ctx context.Context, customerID uuid.UUID) ([]domain.BackInStockSubscription, error) {
+	var subscriptions []domain.BackInStockSubscription
 	err := r.db.WithContext(ctx).
 		Where("customer_id = ?", customerID).
 		Order("created_at DESC").
@@ -103,8 +103,8 @@ func (r *BackInStockRepository) GetByCustomer(ctx context.Context, customerID uu
 }
 
 // GetByProduct returns all pending subscriptions for a product
-func (r *BackInStockRepository) GetByProduct(ctx context.Context, productID uuid.UUID, variantID *uuid.UUID) ([]models.BackInStockSubscription, error) {
-	var subscriptions []models.BackInStockSubscription
+func (r *BackInStockRepository) GetByProduct(ctx context.Context, productID uuid.UUID, variantID *uuid.UUID) ([]domain.BackInStockSubscription, error) {
+	var subscriptions []domain.BackInStockSubscription
 	query := r.db.WithContext(ctx).
 		Preload("Customer").
 		Where("product_id = ? AND is_notified = false", productID)
@@ -118,8 +118,8 @@ func (r *BackInStockRepository) GetByProduct(ctx context.Context, productID uuid
 }
 
 // GetPendingNotifications returns all subscriptions that haven't been notified
-func (r *BackInStockRepository) GetPendingNotifications(ctx context.Context, limit int) ([]models.BackInStockSubscription, error) {
-	var subscriptions []models.BackInStockSubscription
+func (r *BackInStockRepository) GetPendingNotifications(ctx context.Context, limit int) ([]domain.BackInStockSubscription, error) {
+	var subscriptions []domain.BackInStockSubscription
 	err := r.db.WithContext(ctx).
 		Preload("Customer").
 		Where("is_notified = false").
@@ -131,7 +131,7 @@ func (r *BackInStockRepository) GetPendingNotifications(ctx context.Context, lim
 // MarkAsNotified marks a subscription as notified
 func (r *BackInStockRepository) MarkAsNotified(ctx context.Context, subscriptionID uuid.UUID) error {
 	return r.db.WithContext(ctx).
-		Model(&models.BackInStockSubscription{}).
+		Model(&domain.BackInStockSubscription{}).
 		Where("id = ?", subscriptionID).
 		Updates(map[string]interface{}{
 			"is_notified":          true,
@@ -142,7 +142,7 @@ func (r *BackInStockRepository) MarkAsNotified(ctx context.Context, subscription
 // MarkMultipleAsNotified marks multiple subscriptions as notified
 func (r *BackInStockRepository) MarkMultipleAsNotified(ctx context.Context, subscriptionIDs []uuid.UUID) error {
 	return r.db.WithContext(ctx).
-		Model(&models.BackInStockSubscription{}).
+		Model(&domain.BackInStockSubscription{}).
 		Where("id IN ?", subscriptionIDs).
 		Updates(map[string]interface{}{
 			"is_notified":          true,
@@ -154,7 +154,7 @@ func (r *BackInStockRepository) MarkMultipleAsNotified(ctx context.Context, subs
 func (r *BackInStockRepository) IsSubscribed(ctx context.Context, customerID, productID uuid.UUID, variantID *uuid.UUID) (bool, error) {
 	var count int64
 	query := r.db.WithContext(ctx).
-		Model(&models.BackInStockSubscription{}).
+		Model(&domain.BackInStockSubscription{}).
 		Where("customer_id = ? AND product_id = ?", customerID, productID)
 
 	if variantID != nil {
@@ -168,26 +168,26 @@ func (r *BackInStockRepository) IsSubscribed(ctx context.Context, customerID, pr
 }
 
 // GetStats returns statistics about subscriptions
-func (r *BackInStockRepository) GetStats(ctx context.Context) (*models.BackInStockStats, error) {
-	var stats models.BackInStockStats
+func (r *BackInStockRepository) GetStats(ctx context.Context) (*domain.BackInStockStats, error) {
+	var stats domain.BackInStockStats
 
 	// Total subscriptions
-	r.db.WithContext(ctx).Model(&models.BackInStockSubscription{}).Count(&stats.TotalSubscriptions)
+	r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{}).Count(&stats.TotalSubscriptions)
 
 	// Pending notifications
-	r.db.WithContext(ctx).Model(&models.BackInStockSubscription{}).
+	r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{}).
 		Where("is_notified = false").Count(&stats.PendingNotifications)
 
 	// Sent notifications
-	r.db.WithContext(ctx).Model(&models.BackInStockSubscription{}).
+	r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{}).
 		Where("is_notified = true").Count(&stats.SentNotifications)
 
 	// Unique products
-	r.db.WithContext(ctx).Model(&models.BackInStockSubscription{}).
+	r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{}).
 		Distinct("product_id").Count(&stats.UniqueProducts)
 
 	// Unique customers
-	r.db.WithContext(ctx).Model(&models.BackInStockSubscription{}).
+	r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{}).
 		Distinct("customer_id").Count(&stats.UniqueCustomers)
 
 	return &stats, nil
@@ -196,11 +196,11 @@ func (r *BackInStockRepository) GetStats(ctx context.Context) (*models.BackInSto
 // Admin methods
 
 // ListAll returns all subscriptions with pagination (admin)
-func (r *BackInStockRepository) ListAll(ctx context.Context, page, limit int, pendingOnly bool) ([]models.BackInStockSubscription, int64, error) {
-	var subscriptions []models.BackInStockSubscription
+func (r *BackInStockRepository) ListAll(ctx context.Context, page, limit int, pendingOnly bool) ([]domain.BackInStockSubscription, int64, error) {
+	var subscriptions []domain.BackInStockSubscription
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&models.BackInStockSubscription{})
+	query := r.db.WithContext(ctx).Model(&domain.BackInStockSubscription{})
 
 	if pendingOnly {
 		query = query.Where("is_notified = false")
@@ -225,6 +225,6 @@ func (r *BackInStockRepository) ListAll(ctx context.Context, page, limit int, pe
 func (r *BackInStockRepository) DeleteOldNotified(ctx context.Context, olderThanDays int) (int64, error) {
 	result := r.db.WithContext(ctx).
 		Where("is_notified = true AND notification_sent_at < NOW() - INTERVAL '? days'", olderThanDays).
-		Delete(&models.BackInStockSubscription{})
+		Delete(&domain.BackInStockSubscription{})
 	return result.RowsAffected, result.Error
 }

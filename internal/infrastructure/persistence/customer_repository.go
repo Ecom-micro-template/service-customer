@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"github.com/google/uuid"
@@ -9,31 +9,31 @@ import (
 // CustomerRepository defines the interface for customer data operations
 type CustomerRepository interface {
 	// CRUD operations
-	ListAdmin(filter models.CustomerListFilter) ([]models.Customer, int64, error)
-	GetByID(id uuid.UUID) (*models.Customer, error)
-	Create(req *models.CreateCustomerRequest, createdBy *uuid.UUID) (*models.Customer, error)
-	Update(id uuid.UUID, req *models.UpdateCustomerRequest) (*models.Customer, error)
+	ListAdmin(filter domain.CustomerListFilter) ([]domain.Customer, int64, error)
+	GetByID(id uuid.UUID) (*domain.Customer, error)
+	Create(req *domain.CreateCustomerRequest, createdBy *uuid.UUID) (*domain.Customer, error)
+	Update(id uuid.UUID, req *domain.UpdateCustomerRequest) (*domain.Customer, error)
 	Delete(id uuid.UUID) error
 
 	// Order-related
 	GetCustomerOrders(customerID uuid.UUID, page, limit int) ([]CustomerOrderSummary, int64, error)
 
 	// Notes
-	AddNote(customerID uuid.UUID, note string, isPrivate bool, createdBy uuid.UUID) (*models.CustomerNote, error)
-	GetNotes(customerID uuid.UUID) ([]models.CustomerNote, error)
+	AddNote(customerID uuid.UUID, note string, isPrivate bool, createdBy uuid.UUID) (*domain.CustomerNote, error)
+	GetNotes(customerID uuid.UUID) ([]domain.CustomerNote, error)
 
 	// Activity
-	GetActivity(customerID uuid.UUID, page, limit int) ([]models.CustomerActivity, int64, error)
+	GetActivity(customerID uuid.UUID, page, limit int) ([]domain.CustomerActivity, int64, error)
 
 	// Segments
-	GetSegments() ([]models.CustomerSegment, error)
-	CreateSegment(name, description string, conditions interface{}, color string) (*models.CustomerSegment, error)
-	UpdateSegment(id uuid.UUID, name, description *string, conditions interface{}, color *string) (*models.CustomerSegment, error)
+	GetSegments() ([]domain.CustomerSegment, error)
+	CreateSegment(name, description string, conditions interface{}, color string) (*domain.CustomerSegment, error)
+	UpdateSegment(id uuid.UUID, name, description *string, conditions interface{}, color *string) (*domain.CustomerSegment, error)
 	DeleteSegment(id uuid.UUID) error
 	AssignSegments(customerID uuid.UUID, segmentIDs []uuid.UUID) error
 
 	// Export and stats
-	Export(filter models.CustomerListFilter, format string) (interface{}, error)
+	Export(filter domain.CustomerListFilter, format string) (interface{}, error)
 	GetStats() (*CustomerStats, error)
 }
 
@@ -81,11 +81,11 @@ func NewCustomerRepository(db *gorm.DB) CustomerRepository {
 	return &customerRepository{db: db}
 }
 
-func (r *customerRepository) ListAdmin(filter models.CustomerListFilter) ([]models.Customer, int64, error) {
-	var customers []models.Customer
+func (r *customerRepository) ListAdmin(filter domain.CustomerListFilter) ([]domain.Customer, int64, error) {
+	var customers []domain.Customer
 	var total int64
 
-	query := r.db.Model(&models.Customer{})
+	query := r.db.Model(&domain.Customer{})
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
@@ -106,16 +106,16 @@ func (r *customerRepository) ListAdmin(filter models.CustomerListFilter) ([]mode
 	return customers, total, nil
 }
 
-func (r *customerRepository) GetByID(id uuid.UUID) (*models.Customer, error) {
-	var customer models.Customer
+func (r *customerRepository) GetByID(id uuid.UUID) (*domain.Customer, error) {
+	var customer domain.Customer
 	if err := r.db.First(&customer, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &customer, nil
 }
 
-func (r *customerRepository) Create(req *models.CreateCustomerRequest, createdBy *uuid.UUID) (*models.Customer, error) {
-	customer := &models.Customer{
+func (r *customerRepository) Create(req *domain.CreateCustomerRequest, createdBy *uuid.UUID) (*domain.Customer, error) {
+	customer := &domain.Customer{
 		Email:     req.Email,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -128,8 +128,8 @@ func (r *customerRepository) Create(req *models.CreateCustomerRequest, createdBy
 	return customer, nil
 }
 
-func (r *customerRepository) Update(id uuid.UUID, req *models.UpdateCustomerRequest) (*models.Customer, error) {
-	var customer models.Customer
+func (r *customerRepository) Update(id uuid.UUID, req *domain.UpdateCustomerRequest) (*domain.Customer, error) {
+	var customer domain.Customer
 	if err := r.db.First(&customer, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (r *customerRepository) Update(id uuid.UUID, req *models.UpdateCustomerRequ
 }
 
 func (r *customerRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&models.Customer{}, "id = ?", id).Error
+	return r.db.Delete(&domain.Customer{}, "id = ?", id).Error
 }
 
 func (r *customerRepository) GetCustomerOrders(customerID uuid.UUID, page, limit int) ([]CustomerOrderSummary, int64, error) {
@@ -221,8 +221,8 @@ func (r *customerRepository) GetCustomerOrders(customerID uuid.UUID, page, limit
 	return orders, total, nil
 }
 
-func (r *customerRepository) AddNote(customerID uuid.UUID, note string, isPrivate bool, createdBy uuid.UUID) (*models.CustomerNote, error) {
-	n := &models.CustomerNote{
+func (r *customerRepository) AddNote(customerID uuid.UUID, note string, isPrivate bool, createdBy uuid.UUID) (*domain.CustomerNote, error) {
+	n := &domain.CustomerNote{
 		CustomerID: customerID,
 		Note:       note,
 		IsPrivate:  isPrivate,
@@ -234,19 +234,19 @@ func (r *customerRepository) AddNote(customerID uuid.UUID, note string, isPrivat
 	return n, nil
 }
 
-func (r *customerRepository) GetNotes(customerID uuid.UUID) ([]models.CustomerNote, error) {
-	var notes []models.CustomerNote
+func (r *customerRepository) GetNotes(customerID uuid.UUID) ([]domain.CustomerNote, error) {
+	var notes []domain.CustomerNote
 	if err := r.db.Where("customer_id = ?", customerID).Order("created_at DESC").Find(&notes).Error; err != nil {
 		return nil, err
 	}
 	return notes, nil
 }
 
-func (r *customerRepository) GetActivity(customerID uuid.UUID, page, limit int) ([]models.CustomerActivity, int64, error) {
-	var activities []models.CustomerActivity
+func (r *customerRepository) GetActivity(customerID uuid.UUID, page, limit int) ([]domain.CustomerActivity, int64, error) {
+	var activities []domain.CustomerActivity
 	var total int64
 
-	query := r.db.Model(&models.CustomerActivity{}).Where("customer_id = ?", customerID)
+	query := r.db.Model(&domain.CustomerActivity{}).Where("customer_id = ?", customerID)
 	query.Count(&total)
 
 	offset := (page - 1) * limit
@@ -256,16 +256,16 @@ func (r *customerRepository) GetActivity(customerID uuid.UUID, page, limit int) 
 	return activities, total, nil
 }
 
-func (r *customerRepository) GetSegments() ([]models.CustomerSegment, error) {
-	var segments []models.CustomerSegment
+func (r *customerRepository) GetSegments() ([]domain.CustomerSegment, error) {
+	var segments []domain.CustomerSegment
 	if err := r.db.Find(&segments).Error; err != nil {
 		return nil, err
 	}
 	return segments, nil
 }
 
-func (r *customerRepository) CreateSegment(name, description string, conditions interface{}, color string) (*models.CustomerSegment, error) {
-	segment := &models.CustomerSegment{
+func (r *customerRepository) CreateSegment(name, description string, conditions interface{}, color string) (*domain.CustomerSegment, error) {
+	segment := &domain.CustomerSegment{
 		Name:        name,
 		Description: description,
 		Color:       color,
@@ -276,8 +276,8 @@ func (r *customerRepository) CreateSegment(name, description string, conditions 
 	return segment, nil
 }
 
-func (r *customerRepository) UpdateSegment(id uuid.UUID, name, description *string, conditions interface{}, color *string) (*models.CustomerSegment, error) {
-	var segment models.CustomerSegment
+func (r *customerRepository) UpdateSegment(id uuid.UUID, name, description *string, conditions interface{}, color *string) (*domain.CustomerSegment, error) {
+	var segment domain.CustomerSegment
 	if err := r.db.First(&segment, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
@@ -300,16 +300,16 @@ func (r *customerRepository) UpdateSegment(id uuid.UUID, name, description *stri
 }
 
 func (r *customerRepository) DeleteSegment(id uuid.UUID) error {
-	return r.db.Delete(&models.CustomerSegment{}, "id = ?", id).Error
+	return r.db.Delete(&domain.CustomerSegment{}, "id = ?", id).Error
 }
 
 func (r *customerRepository) AssignSegments(customerID uuid.UUID, segmentIDs []uuid.UUID) error {
 	// Clear existing assignments
-	r.db.Where("customer_id = ?", customerID).Delete(&models.CustomerSegmentAssignment{})
+	r.db.Where("customer_id = ?", customerID).Delete(&domain.CustomerSegmentAssignment{})
 
 	// Create new assignments
 	for _, segmentID := range segmentIDs {
-		assignment := &models.CustomerSegmentAssignment{
+		assignment := &domain.CustomerSegmentAssignment{
 			CustomerID: customerID,
 			SegmentID:  segmentID,
 		}
@@ -320,7 +320,7 @@ func (r *customerRepository) AssignSegments(customerID uuid.UUID, segmentIDs []u
 	return nil
 }
 
-func (r *customerRepository) Export(filter models.CustomerListFilter, format string) (interface{}, error) {
+func (r *customerRepository) Export(filter domain.CustomerListFilter, format string) (interface{}, error) {
 	customers, _, err := r.ListAdmin(filter)
 	if err != nil {
 		return nil, err
@@ -331,10 +331,10 @@ func (r *customerRepository) Export(filter models.CustomerListFilter, format str
 func (r *customerRepository) GetStats() (*CustomerStats, error) {
 	stats := &CustomerStats{}
 
-	r.db.Model(&models.Customer{}).Count(&stats.TotalCustomers)
-	r.db.Model(&models.Customer{}).Where("status = ?", "active").Count(&stats.ActiveCustomers)
-	r.db.Model(&models.Customer{}).Where("created_at >= CURRENT_DATE").Count(&stats.NewCustomersToday)
-	r.db.Model(&models.Customer{}).Where("created_at >= date_trunc('month', CURRENT_DATE)").Count(&stats.NewCustomersMonth)
+	r.db.Model(&domain.Customer{}).Count(&stats.TotalCustomers)
+	r.db.Model(&domain.Customer{}).Where("status = ?", "active").Count(&stats.ActiveCustomers)
+	r.db.Model(&domain.Customer{}).Where("created_at >= CURRENT_DATE").Count(&stats.NewCustomersToday)
+	r.db.Model(&domain.Customer{}).Where("created_at >= date_trunc('month', CURRENT_DATE)").Count(&stats.NewCustomersMonth)
 
 	return stats, nil
 }

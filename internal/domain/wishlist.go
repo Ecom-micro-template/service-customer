@@ -1,4 +1,4 @@
-// Package models contains GORM persistence models for the customer service.
+// Package domain contains GORM persistence models for the customer service.
 //
 // Deprecated: This package is being migrated to DDD architecture.
 // For new development, use:
@@ -6,7 +6,7 @@
 //   - Persistence: github.com/Ecom-micro-template/service-customer/internal/infrastructure/persistence
 //
 // Existing code can continue using this package during the transition period.
-package models
+package domain
 
 import (
 	"time"

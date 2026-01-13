@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 
 	// Auto-migrate models
-	err = db.AutoMigrate(&models.Profile{})
+	err = db.AutoMigrate(&domain.Profile{})
 	require.NoError(t, err)
 
 	return db
@@ -28,7 +28,7 @@ func TestProfileRepository_Create(t *testing.T) {
 	repo := NewProfileRepository(db)
 	ctx := context.Background()
 
-	profile := &models.Profile{
+	profile := &domain.Profile{
 		ID:       uuid.New(),
 		FullName: "John Doe",
 		Email:    "john@example.com",
@@ -47,7 +47,7 @@ func TestProfileRepository_GetByUserID(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	profile := &models.Profile{
+	profile := &domain.Profile{
 		ID:       userID,
 		FullName: "Jane Doe",
 		Email:    "jane@example.com",
@@ -70,7 +70,7 @@ func TestProfileRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	profile := &models.Profile{
+	profile := &domain.Profile{
 		ID:       userID,
 		FullName: "Original Name",
 		Email:    "original@example.com",
@@ -98,7 +98,7 @@ func TestProfileRepository_Upsert(t *testing.T) {
 	ctx := context.Background()
 
 	userID := uuid.New()
-	profile := &models.Profile{
+	profile := &domain.Profile{
 		ID:       userID,
 		FullName: "First Insert",
 		Email:    "first@example.com",

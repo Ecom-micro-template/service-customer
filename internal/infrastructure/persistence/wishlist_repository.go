@@ -1,4 +1,4 @@
-package repository
+package persistence
 
 import (
 	"context"
@@ -19,8 +19,8 @@ func NewWishlistRepository(db *gorm.DB) *WishlistRepository {
 }
 
 // ListByUserID retrieves all wishlist items for a user
-func (r *WishlistRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]models.WishlistItem, error) {
-	var items []models.WishlistItem
+func (r *WishlistRepository) ListByUserID(ctx context.Context, userID uuid.UUID) ([]domain.WishlistItem, error) {
+	var items []domain.WishlistItem
 	err := r.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
@@ -52,7 +52,7 @@ func (r *WishlistRepository) Add(ctx context.Context, userID, productID uuid.UUI
 // AddWithVariant adds a product/variant to the wishlist with full details
 func (r *WishlistRepository) AddWithVariant(ctx context.Context, userID uuid.UUID, input AddWishlistItemInput) error {
 	// Build query to check for existing item
-	query := r.db.WithContext(ctx).Model(&models.WishlistItem{}).
+	query := r.db.WithContext(ctx).Model(&domain.WishlistItem{}).
 		Where("user_id = ? AND product_id = ?", userID, input.ProductID)
 
 	// Check variant-specific or product-level
@@ -73,7 +73,7 @@ func (r *WishlistRepository) AddWithVariant(ctx context.Context, userID uuid.UUI
 	}
 
 	// Create new wishlist item
-	item := &models.WishlistItem{
+	item := &domain.WishlistItem{
 		UserID:       userID,
 		ProductID:    input.ProductID,
 		VariantID:    input.VariantID,
@@ -92,7 +92,7 @@ func (r *WishlistRepository) AddWithVariant(ctx context.Context, userID uuid.UUI
 func (r *WishlistRepository) Remove(ctx context.Context, userID, productID uuid.UUID) error {
 	result := r.db.WithContext(ctx).
 		Where("user_id = ? AND product_id = ?", userID, productID).
-		Delete(&models.WishlistItem{})
+		Delete(&domain.WishlistItem{})
 
 	if result.Error != nil {
 		return result.Error
@@ -114,7 +114,7 @@ func (r *WishlistRepository) RemoveWithVariant(ctx context.Context, userID, prod
 		query = query.Where("variant_id IS NULL")
 	}
 
-	result := query.Delete(&models.WishlistItem{})
+	result := query.Delete(&domain.WishlistItem{})
 
 	if result.Error != nil {
 		return result.Error
@@ -129,7 +129,7 @@ func (r *WishlistRepository) RemoveWithVariant(ctx context.Context, userID, prod
 func (r *WishlistRepository) RemoveByID(ctx context.Context, userID, itemID uuid.UUID) error {
 	result := r.db.WithContext(ctx).
 		Where("id = ? AND user_id = ?", itemID, userID).
-		Delete(&models.WishlistItem{})
+		Delete(&domain.WishlistItem{})
 
 	if result.Error != nil {
 		return result.Error
@@ -143,7 +143,7 @@ func (r *WishlistRepository) RemoveByID(ctx context.Context, userID, itemID uuid
 // Exists checks if a product is in the user's wishlist (any variant)
 func (r *WishlistRepository) Exists(ctx context.Context, userID, productID uuid.UUID) (bool, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&models.WishlistItem{}).
+	err := r.db.WithContext(ctx).Model(&domain.WishlistItem{}).
 		Where("user_id = ? AND product_id = ?", userID, productID).
 		Count(&count).Error
 	return count > 0, err
@@ -151,7 +151,7 @@ func (r *WishlistRepository) Exists(ctx context.Context, userID, productID uuid.
 
 // ExistsWithVariant checks if a specific product/variant is in the user's wishlist
 func (r *WishlistRepository) ExistsWithVariant(ctx context.Context, userID, productID uuid.UUID, variantID *uuid.UUID) (bool, error) {
-	query := r.db.WithContext(ctx).Model(&models.WishlistItem{}).
+	query := r.db.WithContext(ctx).Model(&domain.WishlistItem{}).
 		Where("user_id = ? AND product_id = ?", userID, productID)
 
 	if variantID != nil {
@@ -166,8 +166,8 @@ func (r *WishlistRepository) ExistsWithVariant(ctx context.Context, userID, prod
 }
 
 // GetByProductID retrieves all wishlist items for a specific product (all variants)
-func (r *WishlistRepository) GetByProductID(ctx context.Context, userID, productID uuid.UUID) ([]models.WishlistItem, error) {
-	var items []models.WishlistItem
+func (r *WishlistRepository) GetByProductID(ctx context.Context, userID, productID uuid.UUID) ([]domain.WishlistItem, error) {
+	var items []domain.WishlistItem
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND product_id = ?", userID, productID).
 		Order("created_at DESC").
@@ -178,7 +178,7 @@ func (r *WishlistRepository) GetByProductID(ctx context.Context, userID, product
 // UpdateNotifyOnSale updates the price drop notification setting
 func (r *WishlistRepository) UpdateNotifyOnSale(ctx context.Context, userID, itemID uuid.UUID, notify bool) error {
 	result := r.db.WithContext(ctx).
-		Model(&models.WishlistItem{}).
+		Model(&domain.WishlistItem{}).
 		Where("id = ? AND user_id = ?", itemID, userID).
 		Update("notify_on_sale", notify)
 
@@ -192,8 +192,8 @@ func (r *WishlistRepository) UpdateNotifyOnSale(ctx context.Context, userID, ite
 }
 
 // GetItemsForPriceDropAlert retrieves items where notify_on_sale is true
-func (r *WishlistRepository) GetItemsForPriceDropAlert(ctx context.Context) ([]models.WishlistItem, error) {
-	var items []models.WishlistItem
+func (r *WishlistRepository) GetItemsForPriceDropAlert(ctx context.Context) ([]domain.WishlistItem, error) {
+	var items []domain.WishlistItem
 	err := r.db.WithContext(ctx).
 		Where("notify_on_sale = ?", true).
 		Find(&items).Error
@@ -203,7 +203,7 @@ func (r *WishlistRepository) GetItemsForPriceDropAlert(ctx context.Context) ([]m
 // CountByUserID returns the count of wishlist items for a user
 func (r *WishlistRepository) CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&models.WishlistItem{}).
+	err := r.db.WithContext(ctx).Model(&domain.WishlistItem{}).
 		Where("user_id = ?", userID).
 		Count(&count).Error
 	return count, err
