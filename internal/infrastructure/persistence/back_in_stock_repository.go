@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/Ecom-micro-template/service-customer/internal/models"
+	"github.com/Ecom-micro-template/service-customer/internal/domain"
 	"gorm.io/gorm"
 )
 

@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Ecom-micro-template/service-customer/internal/middleware"
-	"github.com/Ecom-micro-template/service-customer/internal/models"
-	"github.com/Ecom-micro-template/service-customer/internal/repository"
+	"github.com/Ecom-micro-template/service-customer/internal/domain"
+	"github.com/Ecom-micro-template/service-customer/internal/infrastructure/persistence"
 	"gorm.io/gorm"
 )
 

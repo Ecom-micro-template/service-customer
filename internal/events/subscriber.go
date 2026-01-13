@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/Ecom-micro-template/service-customer/internal/models"
-	"github.com/Ecom-micro-template/service-customer/internal/repository"
+	"github.com/Ecom-micro-template/service-customer/internal/domain"
+	"github.com/Ecom-micro-template/service-customer/internal/infrastructure/persistence"
 	"go.uber.org/zap"
 )
 
